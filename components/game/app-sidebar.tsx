@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { navGroups, navItems } from '@/lib/navigation'
 import { club, finances, formatMoney } from '@/lib/game-data'
@@ -10,6 +11,11 @@ import { ClubCrest } from './club-crest'
 
 export function AppSidebar() {
   const pathname = usePathname()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   return (
     <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col bg-sidebar lg:flex">
@@ -27,7 +33,7 @@ export function AppSidebar() {
               {navItems
                 .filter((item) => item.group === group)
                 .map((item) => {
-                  const active = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href)
+                  const active = mounted && (item.href === '/' ? pathname === '/' : pathname.startsWith(item.href))
                   const Icon = item.icon
                   return (
                     <li key={item.href}>
