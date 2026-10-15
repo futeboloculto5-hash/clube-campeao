@@ -5,7 +5,15 @@ import { headers } from 'next/headers'
 import { revalidatePath } from 'next/cache'
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { careerFinancialEntry, sponsorCatalog, sponsorshipContract } from '@/lib/db/schema'
+import { careerFinancialEntry, careerSave, sponsorCatalog, sponsorshipContract, sponsorshipPayment } from '@/lib/db/schema'
+
+async function getCareerForUser(careerSaveId: string) {
+  const session = await auth.api.getSession({ headers: await headers() })
+  if (!session?.user) throw new Error('Sessão necessária')
+  const [career] = await db.select({ id: careerSave.id }).from(careerSave).where(and(eq(careerSave.id, careerSaveId), eq(careerSave.userId, session.user.id))).limit(1)
+  if (!career) throw new Error('Carreira não encontrada')
+  return career.id
+}
 
 async function getUserId() {
   const session = await auth.api.getSession({ headers: await headers() })
@@ -14,23 +22,35 @@ async function getUserId() {
 }
 
 export async function listSponsors(query = '', sector = 'todos') {
-  const rows = await db.select().from(sponsorCatalog).orderBy(sponsorCatalog.name)
+  const rows = await db.select().from(sponsorCatalog).orderBy(sponsorCatalog.name).limit(100)
   const normalized = query.trim().toLowerCase()
   return rows.filter((row) => (!normalized || `${row.name} ${row.sector}`.toLowerCase().includes(normalized)) && (sector === 'todos' || row.sector === sector))
 }
 
 export async function listSponsorshipContracts(careerSaveId: string) {
-  const userId = await getUserId()
+  await getCareerForUser(careerSaveId)
   return db.select({ contract: sponsorshipContract, sponsor: sponsorCatalog }).from(sponsorshipContract).innerJoin(sponsorCatalog, eq(sponsorCatalog.id, sponsorshipContract.sponsorId)).where(eq(sponsorshipContract.careerSaveId, careerSaveId)).orderBy(desc(sponsorshipContract.createdAt))
 }
 
 export async function createSponsorshipContract(input: { careerSaveId: string; sponsorId: string; contractType: string; feeAmount: number; durationMonths: number; startsOn: string }) {
-  await getUserId()
+  await getCareerForUser(input.careerSaveId)
+  if (!input.contractType.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(input.startsOn)) throw new Error('Informe tipo e data válidos.')
   if (!Number.isFinite(input.feeAmount) || input.feeAmount <= 0 || !Number.isInteger(input.durationMonths) || input.durationMonths <= 0 || input.durationMonths > 120) throw new Error('Informe valor e duração válidos.')
-  const [contract] = await db.insert(sponsorshipContract).values({ careerSaveId: input.careerSaveId, sponsorId: input.sponsorId, contractType: input.contractType, isSimulation: true, status: 'active', feeAmount: String(input.feeAmount), durationMonths: String(input.durationMonths), startsOn: input.startsOn }).returning()
-  const monthlyAmount = input.feeAmount / input.durationMonths
-  const entries = Array.from({ length: input.durationMonths }, (_, index) => { const date = new Date(`${input.startsOn}T12:00:00Z`); date.setUTCMonth(date.getUTCMonth() + index); return { careerSaveId: input.careerSaveId, entryType: 'income', category: 'patrocínio', description: `Parcela simulada de patrocínio · ${contract.id}`, amount: monthlyAmount.toFixed(2), currency: 'CC$', occurredOn: date.toISOString().slice(0, 10), dueOn: date.toISOString().slice(0, 10), status: 'scheduled' } })
-  await db.insert(careerFinancialEntry).values(entries)
+  const [sponsor] = await db.select({ id: sponsorCatalog.id }).from(sponsorCatalog).where(eq(sponsorCatalog.id, input.sponsorId)).limit(1)
+  if (!sponsor) throw new Error('Empresa não encontrada no catálogo verificado.')
+  const contract = await db.transaction(async (tx) => {
+    const [created] = await tx.insert(sponsorshipContract).values({ careerSaveId: input.careerSaveId, sponsorId: input.sponsorId, contractType: input.contractType.trim(), isSimulation: true, status: 'active', feeAmount: String(input.feeAmount), durationMonths: String(input.durationMonths), startsOn: input.startsOn }).returning()
+    const monthlyAmount = input.feeAmount / input.durationMonths
+    const entries = Array.from({ length: input.durationMonths }, (_, index) => {
+      const date = new Date(`${input.startsOn}T12:00:00Z`)
+      date.setUTCMonth(date.getUTCMonth() + index)
+      const dueOn = date.toISOString().slice(0, 10)
+      return { careerSaveId: input.careerSaveId, entryType: 'income' as const, category: 'patrocínio', description: `Parcela simulada de patrocínio · ${created.id}`, amount: monthlyAmount.toFixed(2), currency: 'CC$', occurredOn: dueOn, dueOn, status: 'scheduled' }
+    })
+    const insertedEntries = await tx.insert(careerFinancialEntry).values(entries).returning({ id: careerFinancialEntry.id, amount: careerFinancialEntry.amount, dueOn: careerFinancialEntry.dueOn })
+    await tx.insert(sponsorshipPayment).values(insertedEntries.map((entry) => ({ contractId: created.id, financialEntryId: entry.id, amount: entry.amount, dueOn: entry.dueOn! })))
+    return created
+  })
   revalidatePath('/patrocinios')
   revalidatePath('/financas')
   return contract
