@@ -16,9 +16,11 @@ async function getCareer() {
 }
 
 export async function getCareerFinance() {
-  const careerSaveId = await getCareer()
-  const entries = await db.select().from(careerFinancialEntry).where(eq(careerFinancialEntry.careerSaveId, careerSaveId)).orderBy(desc(careerFinancialEntry.occurredOn), desc(careerFinancialEntry.createdAt))
-  return entries
+  const session = await auth.api.getSession({ headers: await headers() })
+  if (!session?.user) throw new Error('Não autenticado')
+  const [save] = await db.select({ id: careerSave.id }).from(careerSave).where(eq(careerSave.userId, session.user.id)).limit(1)
+  if (!save) return []
+  return db.select().from(careerFinancialEntry).where(eq(careerFinancialEntry.careerSaveId, save.id)).orderBy(desc(careerFinancialEntry.occurredOn), desc(careerFinancialEntry.createdAt))
 }
 
 export async function createCareerFinancialEntry(input: {
