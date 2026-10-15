@@ -25,13 +25,19 @@ const baseURL =
   originFrom(process.env.BETTER_AUTH_URL) ??
   originFrom(process.env.VERCEL_PROJECT_PRODUCTION_URL) ??
   originFrom(process.env.VERCEL_URL) ??
-  originFrom(process.env.V0_RUNTIME_URL)
+  originFrom(process.env.V0_RUNTIME_URL) ??
+  'http://localhost:3000'
+
+const trustedOrigins = Array.from(new Set([
+  ...(process.env.NODE_ENV === 'development' ? previewOrigins : deploymentOrigins),
+  baseURL,
+].filter(Boolean)))
 
 export const auth = betterAuth({
   database: new Pool({ connectionString: process.env.DATABASE_URL }),
   baseURL,
   emailAndPassword: { enabled: true },
-  trustedOrigins: process.env.NODE_ENV === 'development' ? previewOrigins : deploymentOrigins,
+  trustedOrigins,
   ...(process.env.NODE_ENV === 'development'
     ? {
         advanced: {

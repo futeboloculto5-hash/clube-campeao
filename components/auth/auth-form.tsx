@@ -15,10 +15,23 @@ export function AuthForm({ mode, nextPath }: { mode: 'sign-in' | 'sign-up'; next
     setPending(true)
     setError('')
     const form = new FormData(event.currentTarget)
+    const name = String(form.get('name') ?? '').trim()
+    const email = String(form.get('email') ?? '').trim().toLowerCase()
+    const password = String(form.get('password') ?? '')
+    if (isSignUp && name.length < 2) {
+      setError('Informe seu nome completo.')
+      setPending(false)
+      return
+    }
+    if (!email || password.length < 8) {
+      setError('Informe um e-mail válido e uma senha com pelo menos 8 caracteres.')
+      setPending(false)
+      return
+    }
     try {
       const result = isSignUp
-        ? await authClient.signUp.email({ name: String(form.get('name') ?? '').trim(), email: String(form.get('email') ?? '').trim(), password: String(form.get('password') ?? '') })
-        : await authClient.signIn.email({ email: String(form.get('email') ?? '').trim(), password: String(form.get('password') ?? '') })
+        ? await authClient.signUp.email({ name, email, password })
+        : await authClient.signIn.email({ email, password })
       if (result.error) {
         setError('Não foi possível concluir. Verifique os dados e tente novamente.')
         return
