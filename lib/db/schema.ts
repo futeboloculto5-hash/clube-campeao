@@ -153,7 +153,75 @@ export const competitionStanding = pgTable('competition_standing', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [unique('competition_standing_unique').on(table.competitionId, table.clubId)])
 
-export const schema = { user, session, account, verification, careerSave, dataSource, canonicalClub, canonicalPlayer, dataRecord, importBatch, competition, competitionTeam, competitionMatch, competitionStanding }
+export const transferMarketPlayer = pgTable('transfer_market_player', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  canonicalPlayerId: uuid('canonical_player_id').notNull().references(() => canonicalPlayer.id),
+  currentClubId: uuid('current_club_id').references(() => canonicalClub.id),
+  availability: text('availability').notNull().default('indisponivel'),
+  contractStatus: text('contract_status').notNull().default('indisponivel'),
+  sourceId: uuid('source_id').references(() => dataSource.id),
+  referenceDate: date('reference_date'),
+  season: text('season'),
+  dataStatus: text('data_status').notNull().default('unavailable'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [unique('transfer_market_player_season_unique').on(table.canonicalPlayerId, table.season)])
+
+export const transferProposal = pgTable('transfer_proposal', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  careerSaveId: uuid('career_save_id').notNull().references(() => careerSave.id),
+  marketPlayerId: uuid('market_player_id').references(() => transferMarketPlayer.id),
+  playerId: uuid('player_id').notNull().references(() => canonicalPlayer.id),
+  originClubId: uuid('origin_club_id').references(() => canonicalClub.id),
+  destinationClubId: uuid('destination_club_id').references(() => canonicalClub.id),
+  proposalType: text('proposal_type').notNull(),
+  status: text('status').notNull().default('draft'),
+  feeAmount: numeric('fee_amount'),
+  feeDisclosed: boolean('fee_disclosed').notNull().default(false),
+  wageAmount: numeric('wage_amount'),
+  wageDisclosed: boolean('wage_disclosed').notNull().default(false),
+  contractYears: numeric('contract_years'),
+  loanEndDate: date('loan_end_date'),
+  userNote: text('user_note'),
+  isSimulation: boolean('is_simulation').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+export const financialFact = pgTable('financial_fact', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  clubId: uuid('club_id').references(() => canonicalClub.id),
+  metric: text('metric').notNull(),
+  amount: numeric('amount'),
+  currency: text('currency').notNull().default('BRL'),
+  fiscalYear: text('fiscal_year').notNull(),
+  referenceDate: date('reference_date'),
+  methodology: text('methodology'),
+  perimeter: text('perimeter'),
+  status: text('status').notNull().default('unavailable'),
+  sourceId: uuid('source_id').references(() => dataSource.id),
+  sourcePublishedAt: timestamp('source_published_at', { withTimezone: true }),
+  consultedAt: timestamp('consulted_at', { withTimezone: true }).notNull().defaultNow(),
+  supersedesId: uuid('supersedes_id'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+export const careerFinancialEntry = pgTable('career_financial_entry', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  careerSaveId: uuid('career_save_id').notNull().references(() => careerSave.id),
+  entryType: text('entry_type').notNull(),
+  category: text('category').notNull(),
+  description: text('description').notNull(),
+  amount: numeric('amount').notNull(),
+  currency: text('currency').notNull().default('CC$'),
+  occurredOn: date('occurred_on').notNull(),
+  dueOn: date('due_on'),
+  status: text('status').notNull().default('posted'),
+  relatedTransferProposalId: uuid('related_transfer_proposal_id').references(() => transferProposal.id),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+export const schema = { user, session, account, verification, careerSave, dataSource, canonicalClub, canonicalPlayer, dataRecord, importBatch, competition, competitionTeam, competitionMatch, competitionStanding, transferMarketPlayer, transferProposal, financialFact, careerFinancialEntry }
 export type CareerSave = typeof careerSave.$inferSelect
 export type DataSource = typeof dataSource.$inferSelect
 export type DataRecord = typeof dataRecord.$inferSelect
