@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useEffect, useState } from 'react'
 import { Ellipsis } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { navItems } from '@/lib/navigation'
@@ -19,14 +18,9 @@ const isActive = (pathname: string, href: string) => (href === '/' ? pathname ==
 
 export function MobileNav() {
   const pathname = usePathname()
-  const [mounted, setMounted] = useState(false)
   const primary = navItems.filter((item) => item.mobilePrimary)
   const secondary = navItems.filter((item) => !item.mobilePrimary)
-  const secondaryActive = mounted && secondary.some((item) => isActive(pathname, item.href))
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  const secondaryActive = secondary.some((item) => isActive(pathname, item.href))
 
   const tabClass = (active: boolean) =>
     cn(
@@ -41,7 +35,7 @@ export function MobileNav() {
     >
       <ul className="mx-auto flex max-w-lg items-stretch gap-1">
         {primary.map((item) => {
-          const active = mounted && isActive(pathname, item.href)
+          const active = isActive(pathname, item.href)
           const Icon = item.icon
           return (
             <li key={item.href} className="flex flex-1">
