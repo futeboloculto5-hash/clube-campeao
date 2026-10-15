@@ -221,7 +221,47 @@ export const careerFinancialEntry = pgTable('career_financial_entry', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 })
 
-export const schema = { user, session, account, verification, careerSave, dataSource, canonicalClub, canonicalPlayer, dataRecord, importBatch, competition, competitionTeam, competitionMatch, competitionStanding, transferMarketPlayer, transferProposal, financialFact, careerFinancialEntry }
+export const sponsorCatalog = pgTable('sponsor_catalog', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: text('name').notNull().unique(),
+  sector: text('sector').notNull(),
+  officialName: text('official_name'),
+  marketPresence: text('market_presence').notNull().default('Brasil'),
+  verificationStatus: text('verification_status').notNull().default('verified'),
+  sourceUrl: text('source_url'),
+  sourcePublisher: text('source_publisher'),
+  sourceYear: text('source_year'),
+  consultedAt: timestamp('consulted_at', { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+export const sponsorshipContract = pgTable('sponsorship_contract', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  careerSaveId: uuid('career_save_id').notNull().references(() => careerSave.id),
+  sponsorId: uuid('sponsor_id').notNull().references(() => sponsorCatalog.id),
+  contractType: text('contract_type').notNull(),
+  status: text('status').notNull().default('draft'),
+  feeAmount: numeric('fee_amount').notNull(),
+  currency: text('currency').notNull().default('CC$'),
+  durationMonths: numeric('duration_months').notNull(),
+  startsOn: date('starts_on').notNull(),
+  endsOn: date('ends_on'),
+  isSimulation: boolean('is_simulation').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+export const sponsorshipPayment = pgTable('sponsorship_payment', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  contractId: uuid('contract_id').notNull().references(() => sponsorshipContract.id),
+  financialEntryId: uuid('financial_entry_id').references(() => careerFinancialEntry.id),
+  amount: numeric('amount').notNull(),
+  dueOn: date('due_on').notNull(),
+  paidOn: date('paid_on'),
+  status: text('status').notNull().default('scheduled'),
+}, (table) => [unique('sponsorship_payment_unique').on(table.contractId, table.dueOn)])
+
+export const schema = { user, session, account, verification, careerSave, dataSource, canonicalClub, canonicalPlayer, dataRecord, importBatch, competition, competitionTeam, competitionMatch, competitionStanding, transferMarketPlayer, transferProposal, financialFact, careerFinancialEntry, sponsorCatalog, sponsorshipContract, sponsorshipPayment }
 export type CareerSave = typeof careerSave.$inferSelect
 export type DataSource = typeof dataSource.$inferSelect
 export type DataRecord = typeof dataRecord.$inferSelect
