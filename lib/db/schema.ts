@@ -97,7 +97,63 @@ export const verification = pgTable('verification', {
   id: uuid('id').primaryKey(), identifier: text('identifier').notNull(), value: text('value').notNull(), expiresAt: timestamp('expiresAt', { withTimezone: true }).notNull(), createdAt: timestamp('createdAt', { withTimezone: true }).notNull(), updatedAt: timestamp('updatedAt', { withTimezone: true }).notNull(),
 })
 
-export const schema = { user, session, account, verification, careerSave, dataSource, canonicalClub, canonicalPlayer, dataRecord, importBatch }
+export const competition = pgTable('competition', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: text('name').notNull(),
+  season: text('season').notNull(),
+  format: text('format').notNull(),
+  pointsForWin: numeric('points_for_win').notNull().default('3'),
+  pointsForDraw: numeric('points_for_draw').notNull().default('1'),
+  pointsForLoss: numeric('points_for_loss').notNull().default('0'),
+  tiebreakers: text('tiebreakers').notNull().default('points,goal_difference,goals_for,wins'),
+  dataStatus: text('data_status').notNull().default('unavailable'),
+  sourceId: uuid('source_id').references(() => dataSource.id),
+  referenceDate: date('reference_date'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [unique('competition_name_season_unique').on(table.name, table.season)])
+
+export const competitionTeam = pgTable('competition_team', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  competitionId: uuid('competition_id').notNull().references(() => competition.id),
+  clubId: uuid('club_id').notNull().references(() => canonicalClub.id),
+  groupName: text('group_name'),
+  seed: numeric('seed'),
+  simulationRating: numeric('simulation_rating'),
+  dataStatus: text('data_status').notNull().default('unavailable'),
+  sourceId: uuid('source_id').references(() => dataSource.id),
+}, (table) => [unique('competition_team_unique').on(table.competitionId, table.clubId)])
+
+export const competitionMatch = pgTable('competition_match', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  competitionId: uuid('competition_id').notNull().references(() => competition.id),
+  round: numeric('round').notNull(),
+  phase: text('phase').notNull().default('league'),
+  homeClubId: uuid('home_club_id').notNull().references(() => canonicalClub.id),
+  awayClubId: uuid('away_club_id').notNull().references(() => canonicalClub.id),
+  scheduledAt: timestamp('scheduled_at', { withTimezone: true }),
+  status: text('status').notNull().default('scheduled'),
+  homeScore: numeric('home_score'),
+  awayScore: numeric('away_score'),
+  isSimulation: boolean('is_simulation').notNull().default(false),
+  simulatedAt: timestamp('simulated_at', { withTimezone: true }),
+}, (table) => [unique('competition_match_unique').on(table.competitionId, table.round, table.homeClubId, table.awayClubId)])
+
+export const competitionStanding = pgTable('competition_standing', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  competitionId: uuid('competition_id').notNull().references(() => competition.id),
+  clubId: uuid('club_id').notNull().references(() => canonicalClub.id),
+  played: numeric('played').notNull().default('0'),
+  wins: numeric('wins').notNull().default('0'),
+  draws: numeric('draws').notNull().default('0'),
+  losses: numeric('losses').notNull().default('0'),
+  goalsFor: numeric('goals_for').notNull().default('0'),
+  goalsAgainst: numeric('goals_against').notNull().default('0'),
+  points: numeric('points').notNull().default('0'),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [unique('competition_standing_unique').on(table.competitionId, table.clubId)])
+
+export const schema = { user, session, account, verification, careerSave, dataSource, canonicalClub, canonicalPlayer, dataRecord, importBatch, competition, competitionTeam, competitionMatch, competitionStanding }
 export type CareerSave = typeof careerSave.$inferSelect
 export type DataSource = typeof dataSource.$inferSelect
 export type DataRecord = typeof dataRecord.$inferSelect

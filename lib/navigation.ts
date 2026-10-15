@@ -32,6 +32,7 @@ export const navItems: NavItem[] = [
   { slug: 'financas', href: '/financas', label: 'Finanças', icon: Wallet, description: 'Fluxo de caixa, folha salarial, orçamento e gestão de dívidas.', group: 'Negócios', mobilePrimary: true },
   { slug: 'patrocinios', href: '/patrocinios', label: 'Patrocínios', icon: Handshake, description: 'Contratos de camisa, naming rights e parceiros comerciais.', group: 'Negócios' },
   { slug: 'calendario', href: '/calendario', label: 'Calendário', icon: CalendarDays, description: 'Próximas partidas, preparação e preleção da equipe.', group: 'Competição' },
+  { slug: 'competicoes', href: '/competicoes', label: 'Competições', icon: Trophy, description: 'Calendários, rodadas e simulações identificadas do jogo.', group: 'Competição' },
   { slug: 'classificacao', href: '/classificacao', label: 'Classificação', icon: Trophy, description: 'Tabela completa, artilharia e estatísticas da competição.', group: 'Competição' },
   { slug: 'noticias', href: '/noticias', label: 'Notícias', icon: Newspaper, description: 'Imprensa, comunicados oficiais e repercussão com a torcida.', group: 'Competição' },
   { slug: 'cadastro', href: '/cadastro', label: 'Cadastro oficial', icon: Database, description: 'Clubes, jogadores e competições com origem, status e histórico de verificação.', group: 'Competição' },
