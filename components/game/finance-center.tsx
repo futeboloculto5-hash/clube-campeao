@@ -17,7 +17,11 @@ export type FinanceEntry = {
   status: string
 }
 
-const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 2 })
+const money = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+function formatCareerMoney(value: number) {
+  return `CC$ ${money.format(value)}`
+}
 
 export function FinanceCenter({ initialEntries }: { initialEntries: FinanceEntry[] }) {
   const [entries, setEntries] = useState(initialEntries)
@@ -60,8 +64,8 @@ export function FinanceCenter({ initialEntries }: { initialEntries: FinanceEntry
   return (
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-3">
-        <Kpi label="Receitas da carreira" value={money.format(totals.income)} tone="positive" />
-        <Kpi label="Despesas da carreira" value={money.format(totals.expense)} tone="default" />
+        <Kpi label="Receitas da carreira" value={formatCareerMoney(totals.income)} tone="positive" />
+        <Kpi label="Despesas da carreira" value={formatCareerMoney(totals.expense)} tone="default" />
         <Kpi label="Saldo operacional" value={money.format(totals.income - totals.expense)} tone={totals.income >= totals.expense ? 'positive' : 'negative'} />
       </div>
 
@@ -80,7 +84,7 @@ export function FinanceCenter({ initialEntries }: { initialEntries: FinanceEntry
           {message ? <p className="text-sm text-muted-foreground sm:col-span-2" role="status">{message}</p> : null}
         </form> : null}
         <div className="space-y-2">
-          {entries.length === 0 ? <p className="py-8 text-center text-sm text-muted-foreground">Nenhum lançamento registrado nesta carreira.</p> : entries.map((entry) => <div key={entry.id} className="flex items-center gap-3 rounded-xl px-2 py-3 ring-1 ring-border/60"><span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted">{entry.entryType === 'income' ? <ArrowDownLeft className="size-4 text-positive" /> : <ArrowUpRight className="size-4 text-muted-foreground" />}</span><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{entry.description}</p><p className="text-xs text-muted-foreground">{entry.category} · {entry.occurredOn}</p></div><span className={`text-sm font-semibold tabular ${entry.entryType === 'income' ? 'text-positive' : 'text-foreground'}`}>{entry.entryType === 'income' ? '+' : '-'}{money.format(Number(entry.amount))}</span><Button variant="ghost" size="sm" onClick={() => remove(entry.id)} disabled={isPending}>Excluir</Button></div>)}
+          {entries.length === 0 ? <p className="py-8 text-center text-sm text-muted-foreground">Nenhum lançamento registrado nesta carreira.</p> : entries.map((entry) => <div key={entry.id} className="flex items-center gap-3 rounded-xl px-2 py-3 ring-1 ring-border/60"><span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted">{entry.entryType === 'income' ? <ArrowDownLeft className="size-4 text-positive" /> : <ArrowUpRight className="size-4 text-muted-foreground" />}</span><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{entry.description}</p><p className="text-xs text-muted-foreground">{entry.category} · {entry.occurredOn}</p></div><span className={`text-sm font-semibold tabular ${entry.entryType === 'income' ? 'text-positive' : 'text-foreground'}`}>{entry.entryType === 'income' ? '+' : '-'}{formatCareerMoney(Number(entry.amount))}</span><Button variant="ghost" size="sm" onClick={() => remove(entry.id)} disabled={isPending}>Excluir</Button></div>)}
         </div>
       </Panel>
     </div>
