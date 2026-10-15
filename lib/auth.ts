@@ -1,0 +1,31 @@
+import { betterAuth } from 'better-auth'
+import { Pool } from 'pg'
+
+const originFrom = (value?: string) => (value ? `https://${value.replace(/^https?:\/\//, '')}` : undefined)
+const developmentOrigins = [
+  'http://localhost:3000',
+  process.env.V0_RUNTIME_URL,
+  process.env.V0_DEV_APP_URL,
+  process.env.V0_BUILD_URL,
+  process.env.V0_SANDBOX_URL,
+].filter(Boolean) as string[]
+const productionOrigins = [
+  originFrom(process.env.VERCEL_URL),
+  originFrom(process.env.VERCEL_PROJECT_PRODUCTION_URL),
+].filter(Boolean) as string[]
+
+export const auth = betterAuth({
+  database: new Pool({ connectionString: process.env.DATABASE_URL }),
+  emailAndPassword: { enabled: true },
+  trustedOrigins: process.env.NODE_ENV === 'development' ? developmentOrigins : productionOrigins,
+  ...(process.env.NODE_ENV === 'development'
+    ? {
+        advanced: {
+          defaultCookieAttributes: {
+            sameSite: 'none' as const,
+            secure: true,
+          },
+        },
+      }
+    : {}),
+})
