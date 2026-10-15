@@ -1,23 +1,37 @@
 import { betterAuth } from 'better-auth'
 import { Pool } from 'pg'
 
-const originFrom = (value?: string) => (value ? `https://${value.replace(/^https?:\/\//, '')}` : undefined)
-const developmentOrigins = [
+const originFrom = (value?: string) => {
+  if (!value) return undefined
+  return value.startsWith('http://') || value.startsWith('https://')
+    ? value.replace(/\/$/, '')
+    : `https://${value}`
+}
+
+const previewOrigins = [
   'http://localhost:3000',
   process.env.V0_RUNTIME_URL,
   process.env.V0_DEV_APP_URL,
   process.env.V0_BUILD_URL,
   process.env.V0_SANDBOX_URL,
-].filter(Boolean) as string[]
-const productionOrigins = [
-  originFrom(process.env.VERCEL_URL),
-  originFrom(process.env.VERCEL_PROJECT_PRODUCTION_URL),
-].filter(Boolean) as string[]
+].map(originFrom).filter(Boolean) as string[]
+
+const deploymentOrigins = [
+  process.env.VERCEL_URL,
+  process.env.VERCEL_PROJECT_PRODUCTION_URL,
+].map(originFrom).filter(Boolean) as string[]
+
+const baseURL =
+  originFrom(process.env.BETTER_AUTH_URL) ??
+  originFrom(process.env.VERCEL_PROJECT_PRODUCTION_URL) ??
+  originFrom(process.env.VERCEL_URL) ??
+  originFrom(process.env.V0_RUNTIME_URL)
 
 export const auth = betterAuth({
   database: new Pool({ connectionString: process.env.DATABASE_URL }),
+  baseURL,
   emailAndPassword: { enabled: true },
-  trustedOrigins: process.env.NODE_ENV === 'development' ? developmentOrigins : productionOrigins,
+  trustedOrigins: process.env.NODE_ENV === 'development' ? previewOrigins : deploymentOrigins,
   ...(process.env.NODE_ENV === 'development'
     ? {
         advanced: {

@@ -15,12 +15,21 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
     setPending(true)
     setError('')
     const form = new FormData(event.currentTarget)
-    const result = isSignUp
-      ? await authClient.signUp.email({ name: String(form.get('name')), email: String(form.get('email')), password: String(form.get('password')) })
-      : await authClient.signIn.email({ email: String(form.get('email')), password: String(form.get('password')) })
-    if (result.error) setError('Não foi possível concluir. Verifique os dados e tente novamente.')
-    else { router.push('/'); router.refresh() }
-    setPending(false)
+    try {
+      const result = isSignUp
+        ? await authClient.signUp.email({ name: String(form.get('name') ?? '').trim(), email: String(form.get('email') ?? '').trim(), password: String(form.get('password') ?? '') })
+        : await authClient.signIn.email({ email: String(form.get('email') ?? '').trim(), password: String(form.get('password') ?? '') })
+      if (result.error) {
+        setError('Não foi possível concluir. Verifique os dados e tente novamente.')
+        return
+      }
+      router.push('/')
+      router.refresh()
+    } catch {
+      setError('Não foi possível conectar ao serviço de acesso. Tente novamente.')
+    } finally {
+      setPending(false)
+    }
   }
 
   return <form onSubmit={onSubmit} className="mx-auto flex w-full max-w-md flex-col gap-4 rounded-2xl border border-white/10 bg-[#101b2b] p-6 text-white shadow-2xl">
