@@ -4,7 +4,7 @@ import { FormEvent, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { authClient } from '@/lib/auth-client'
 
-export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
+export function AuthForm({ mode, nextPath }: { mode: 'sign-in' | 'sign-up'; nextPath?: string }) {
   const router = useRouter()
   const [error, setError] = useState('')
   const [pending, setPending] = useState(false)
@@ -23,7 +23,8 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
         setError('Não foi possível concluir. Verifique os dados e tente novamente.')
         return
       }
-      router.push('/')
+      const destination = nextPath?.startsWith('/') && !nextPath.startsWith('//') ? nextPath : '/'
+      router.push(destination)
       router.refresh()
     } catch {
       setError('Não foi possível conectar ao serviço de acesso. Tente novamente.')
