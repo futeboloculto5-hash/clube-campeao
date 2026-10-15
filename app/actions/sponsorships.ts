@@ -57,8 +57,12 @@ export async function createSponsorshipContract(input: { careerSaveId: string; s
 }
 
 export async function updateSponsorshipStatus(id: string, careerSaveId: string, status: 'active' | 'rejected' | 'ended' | 'renewal') {
-  await getUserId()
-  const [updated] = await db.update(sponsorshipContract).set({ status, updatedAt: new Date() }).where(and(eq(sponsorshipContract.id, id), eq(sponsorshipContract.careerSaveId, careerSaveId))).returning()
+  await getCareerForUser(careerSaveId)
+  const [updated] = await db
+    .update(sponsorshipContract)
+    .set({ status, updatedAt: new Date() })
+    .where(and(eq(sponsorshipContract.id, id), eq(sponsorshipContract.careerSaveId, careerSaveId)))
+    .returning()
   if (!updated) throw new Error('Contrato não encontrado.')
   revalidatePath('/patrocinios')
   return updated
