@@ -188,7 +188,40 @@ export const transferProposal = pgTable('transfer_proposal', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })
 
-export const schema = { user, session, account, verification, careerSave, dataSource, canonicalClub, canonicalPlayer, dataRecord, importBatch, competition, competitionTeam, competitionMatch, competitionStanding, transferMarketPlayer, transferProposal }
+export const financialFact = pgTable('financial_fact', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  clubId: uuid('club_id').references(() => canonicalClub.id),
+  metric: text('metric').notNull(),
+  amount: numeric('amount'),
+  currency: text('currency').notNull().default('BRL'),
+  fiscalYear: text('fiscal_year').notNull(),
+  referenceDate: date('reference_date'),
+  methodology: text('methodology'),
+  perimeter: text('perimeter'),
+  status: text('status').notNull().default('unavailable'),
+  sourceId: uuid('source_id').references(() => dataSource.id),
+  sourcePublishedAt: timestamp('source_published_at', { withTimezone: true }),
+  consultedAt: timestamp('consulted_at', { withTimezone: true }).notNull().defaultNow(),
+  supersedesId: uuid('supersedes_id'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+export const careerFinancialEntry = pgTable('career_financial_entry', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  careerSaveId: uuid('career_save_id').notNull().references(() => careerSave.id),
+  entryType: text('entry_type').notNull(),
+  category: text('category').notNull(),
+  description: text('description').notNull(),
+  amount: numeric('amount').notNull(),
+  currency: text('currency').notNull().default('CC$'),
+  occurredOn: date('occurred_on').notNull(),
+  dueOn: date('due_on'),
+  status: text('status').notNull().default('posted'),
+  relatedTransferProposalId: uuid('related_transfer_proposal_id').references(() => transferProposal.id),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+export const schema = { user, session, account, verification, careerSave, dataSource, canonicalClub, canonicalPlayer, dataRecord, importBatch, competition, competitionTeam, competitionMatch, competitionStanding, transferMarketPlayer, transferProposal, financialFact, careerFinancialEntry }
 export type CareerSave = typeof careerSave.$inferSelect
 export type DataSource = typeof dataSource.$inferSelect
 export type DataRecord = typeof dataRecord.$inferSelect
