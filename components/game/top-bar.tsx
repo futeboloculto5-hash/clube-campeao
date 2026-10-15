@@ -3,6 +3,8 @@
 import Link from 'next/link'
 import { Bell, ChevronDown, CircleUserRound, FastForward, LogOut, Settings, Trophy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { authClient } from '@/lib/auth-client'
+import { useRouter } from 'next/navigation'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,7 +20,14 @@ import { ClubCrest } from './club-crest'
 import { BrandMark } from './brand-mark'
 
 export function TopBar() {
+  const router = useRouter()
   const unread = news.slice(0, 3)
+
+  async function handleSignOut() {
+    await authClient.signOut()
+    router.replace('/sign-in')
+    router.refresh()
+  }
 
   return (
     <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl">
@@ -116,9 +125,9 @@ export function TopBar() {
                 Configurações
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="h-9 gap-2.5 px-2.5" onClick={() => demoAction('Salvar e sair')}>
+              <DropdownMenuItem className="h-9 gap-2.5 px-2.5" onClick={handleSignOut}>
                 <LogOut aria-hidden="true" />
-                Salvar e sair
+                Sair da conta
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
