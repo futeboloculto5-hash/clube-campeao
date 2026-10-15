@@ -24,6 +24,17 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
+## Arquitetura de dados confiável
+
+A camada de governança de dados está em `lib/db/schema.ts` e `app/actions/data-governance.ts`, sem alterar a interface existente.
+
+- `data_source`: registra URL, entidade responsável, metodologia, termos e método de acesso.
+- `canonical_club` e `canonical_player`: chaves canônicas únicas evitam duplicidade.
+- `data_record`: guarda cada campo com status (`confirmed`, `published_estimate`, `outdated`, `unavailable` ou `unverified`), temporada, datas de publicação/consulta/referência e o registro anterior em `supersedes_id`.
+- `import_batch`: representa importações manuais pendentes de revisão quando não há API oficial autorizada.
+
+O fluxo deve registrar a fonte antes do valor. Valores ausentes não são preenchidos automaticamente: devem permanecer indisponíveis. A aplicação não faz scraping; integrações futuras devem respeitar termos de uso, limites e direitos de redistribuição da fonte. As ações server-side exigem sessão autenticada e validam URL, status e presença de valor antes de gravar uma versão.
+
 ## Learn More
 
 To learn more, take a look at the following resources:
